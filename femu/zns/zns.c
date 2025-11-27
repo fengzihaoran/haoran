@@ -1,4 +1,8 @@
 #include "./zns.h"
+
+#include <assert.h>
+#include <stdbool.h>
+
 #include "znsftl.h"
 
 #define MIN_DISCARD_GRANULARITY     (4 * KiB)
@@ -21,11 +25,18 @@ static inline NvmeZone *zns_get_zone_by_slba(NvmeNamespace *ns, uint64_t slba)
     return &n->zone_array[zone_idx];
 }
 
+/**
+ * zns_init_zone_geometry - initialize zone geometry
+ * @ns: namespace
+ * @errp: error pointer
+ *
+ * Return: 0 on success, -1 on failure
+ */
 static int zns_init_zone_geometry(NvmeNamespace *ns, Error **errp)
 {
     FemuCtrl *n = ns->ctrl;
     uint64_t zone_size, zone_cap;
-    uint32_t lbasz = 1 << zns_ns_lbads(ns);
+    uint32_t lbasz = 1 << zns_ns_lbads(ns); //计算逻辑块大小
 
     if (n->zone_size_bs) {
         zone_size = n->zone_size_bs;

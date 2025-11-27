@@ -86,16 +86,16 @@ typedef struct QEMU_PACKED NvmeLBAFE {
 } NvmeLBAFE;
 
 typedef struct QEMU_PACKED NvmeIdNsZoned {
-    uint16_t    zoc;
-    uint16_t    ozcs;
-    uint32_t    mar;
-    uint32_t    mor;
-    uint32_t    rrl;
-    uint32_t    frl;
-    uint8_t     rsvd20[2796];
-    NvmeLBAFE   lbafe[16];
-    uint8_t     rsvd3072[768];
-    uint8_t     vs[256];
+    uint16_t    zoc;              // Zone Operation Characteristics (区域操作特性)
+    uint16_t    ozcs;             // Optional Zoned Command Support (可选区域命令支持)
+    uint32_t    mar;              // Maximum Active Resources (最大活跃资源数)
+    uint32_t    mor;              // Maximum Open Resources (最大打开资源数)
+    uint32_t    rrl;              // Reset Recommended Limit (建议重置限制)
+    uint32_t    frl;              // Finish Recommended Limit (建议完成限制)
+    uint8_t     rsvd20[2796];     // Reserved bytes (保留字节，用于对齐和未来扩展)
+    NvmeLBAFE   lbafe[16];        // LBA Format Extension for zones (区域的LBA格式扩展)
+    uint8_t     rsvd3072[768];    // Reserved bytes (保留字节，用于对齐和未来扩展)
+    uint8_t     vs[256];          // Vendor Specific (厂商特定数据)
 } NvmeIdNsZoned;
 
 typedef struct NvmeZone {

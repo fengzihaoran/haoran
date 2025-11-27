@@ -289,11 +289,11 @@ enum NvmePsdt {
 };
 
 typedef struct NvmeCmd {
-    uint16_t    opcode : 8;
-    uint16_t    fuse   : 2;
-    uint16_t    res1   : 4;
-    uint16_t    psdt   : 2;
-    uint16_t    cid;
+    uint16_t    opcode : 8;// 操作码，占8位
+    uint16_t    fuse   : 2;// 命令融合标志，占2位
+    uint16_t    res1   : 4;// 保留位，占4位
+    uint16_t    psdt   : 2;// PRP/SGL 数据传输描述符类型，占2位
+    uint16_t    cid;       // 命令标识符
     uint32_t    nsid;
     uint64_t    res2;
     uint64_t    mptr;
@@ -849,9 +849,9 @@ typedef struct NvmeRangeType {
 } NvmeRangeType;
 
 typedef struct NvmeLBAF {
-    uint16_t    ms;
-    uint8_t     lbads;
-    uint8_t     rp;
+    uint16_t    ms;//元数据大小
+    uint8_t     lbads;//逻辑块数据大小（LBA Data Size），以2的幂次表示逻辑块大小（如值为12表示2^12=4096字节）
+    uint8_t     rp;//相对性能（Relative Performance），指示使用该格式的读写性能等级（0=最佳，1=更好，2=好，3=可接受）
 } NvmeLBAF;
 
 #define NVME_NSID_BROADCAST 0xffffffff
@@ -1188,7 +1188,7 @@ typedef struct FemuCtrl {
     uint8_t         zasl;
     bool            zoned;
     bool            cross_zone_read;
-    uint64_t        zone_size_bs;
+    uint64_t        zone_size_bs;           //每个zone的大小（以字节为单位）
     bool            zone_cap_bs;
     uint32_t        max_active_zones;
     uint32_t        max_open_zones;
