@@ -1,5 +1,8 @@
 #include "../nvme.h"
 
+// Optanme READWRITE_LATENCY 10us
+#define OPTANE_READWRITE_LATENCY    10000
+
 static void bb_init_ctrl_str(FemuCtrl *n)
 {
     static int fsid_vno = 0;
@@ -12,10 +15,16 @@ static void bb_init_ctrl_str(FemuCtrl *n)
 static uint16_t nop_io_cmd(FemuCtrl *n, NvmeNamespace *ns, NvmeCmd *cmd,
                            NvmeRequest *req)
 {
+    uint16_t ret;
     switch (cmd->opcode) {
     case NVME_CMD_READ:
     case NVME_CMD_WRITE:
-        return nvme_rw(n, ns, cmd, req);
+
+        // Optanme READWRITE_LATENCY
+        ret = nvme_rw(n, ns, cmd, req);
+        req->reqlat = OPTANE_READWRITE_LATENCY;
+        req->expire_time += req->reqlat;
+        return ret;
     default:
         return NVME_INVALID_OPCODE | NVME_DNR;
     }

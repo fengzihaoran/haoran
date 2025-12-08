@@ -1,4 +1,5 @@
 #include "./nvme.h"
+#include <inttypes.h>
 
 static uint16_t nvme_io_cmd(FemuCtrl *n, NvmeCmd *cmd, NvmeRequest *req);
 
@@ -84,7 +85,14 @@ static void nvme_process_sq_io(void *opaque, int index_poller)
             /* Normal I/Os that don't need delay emulation */
             req->status = status;
         } else {
-            femu_err("Error IO processed!\n");
+            NvmeRwCmd *rw = (NvmeRwCmd *)&cmd;
+            uint64_t slba = le64_to_cpu(rw->slba);
+            uint32_t nlb  = le16_to_cpu(rw->nlb) + 1;
+            uint32_t nsid = le32_to_cpu(cmd.nsid);
+
+            femu_err("Error IO processed! status=0x%x nsid=%u slba=%"PRIu64" nlb=%u\n",
+                     status, nsid, slba, nlb);
+            // femu_err("Error IO processed!\n");
         }
 
         processed++;
@@ -328,9 +336,22 @@ uint16_t nvme_rw(FemuCtrl *n, NvmeNamespace *ns, NvmeCmd *cmd, NvmeRequest *req)
     err = femu_nvme_rw_check_req(n, ns, cmd, req, slba, elba, nlb, ctrl,
                                  data_size, meta_size);
     if (err)
+    {
+        femu_err("rw_check_req error: status=0x%x nsid=%u slba=%" PRIu64
+         " nlb=%u data_size=%u nsze=%" PRIu64 "\n",
+         (unsigned)err,
+         le32_to_cpu(cmd->nsid),
+         (uint64_t)slba,
+         (unsigned)nlb,
+         (unsigned)data_size,
+         (uint64_t)le64_to_cpu(ns->id_ns.nsze));
         return err;
+    }
 
     if (nvme_map_prp(&req->qsg, &req->iov, prp1, prp2, data_size, n)) {
+        femu_err("nvme_rw: nvme_map_prp failed: nsid=%u slba=%"PRIu64
+                 " nlb=%u data_size=%"PRIu64" prp1=0x%"PRIx64" prp2=0x%"PRIx64"\n",
+                 le32_to_cpu(cmd->nsid), slba, nlb, data_size, prp1, prp2);
         nvme_set_error_page(n, req->sq->sqid, cmd->cid, NVME_INVALID_FIELD,
                             offsetof(NvmeRwCmd, prp1), 0, ns->id);
         return NVME_INVALID_FIELD | NVME_DNR;
@@ -344,9 +365,18 @@ uint16_t nvme_rw(FemuCtrl *n, NvmeNamespace *ns, NvmeCmd *cmd, NvmeRequest *req)
 
     ret = backend_rw(n->mbe, &req->qsg, &data_offset, req->is_write);
     if (!ret) {
+        femu_debug("backend_rw success!!");
         return NVME_SUCCESS;
     }
-
+    femu_err("backend_rw failed: ret=%d is_write=%d nsid=%u slba=%" PRIu64
+         " nlb=%u offset=%" PRIu64 " size=%u\n",
+         ret,
+         req->is_write,
+         le32_to_cpu(cmd->nsid),
+         (uint64_t)slba,
+         (unsigned)nlb,
+         (uint64_t)data_offset,
+         (unsigned)data_size);
     return NVME_DNR;
 }
 
